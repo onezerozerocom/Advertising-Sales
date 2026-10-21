@@ -226,6 +226,18 @@
   .t-shot a { font-size: 13px; }
 
   /* 교사용 결과 보기 (주소 끝에 #teacher) */
+  /* 오른쪽 위에 늘 보이는 제출 버튼 */
+  .fab { position: fixed; top: 14px; right: 14px; z-index: 30; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .fab-btn { font: inherit; font-size: 15px; font-weight: 700; border: 0; border-radius: 999px; padding: 10px 18px; cursor: pointer; background: var(--accent); color: #fff; box-shadow: 0 8px 22px -8px rgba(0,0,0,.45); }
+  .fab-btn:hover { filter: brightness(1.07); }
+  .fab-btn:disabled { opacity: .7; cursor: wait; }
+  .fab-btn.ok { background: var(--sales); }
+  .fab-btn.warn { background: #f59f00; color: #2a1a00; }
+  .fab-msg { font-size: 13px; line-height: 1.5; color: var(--ink-2); background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; max-width: 250px; box-shadow: 0 8px 22px -12px rgba(0,0,0,.35); }
+  .fab-msg:empty { display: none; }
+  .fab-msg.ok { color: var(--ok); } .fab-msg.warn { color: var(--warn); }
+  body.t-mode .fab { display: none; }
+
   #teacherView { display: none; max-width: 1180px; margin: 0 auto; padding: 28px 18px 56px; }
   body.t-mode .wrap { display: none; }
   body.t-mode #teacherView { display: block; }
@@ -266,7 +278,7 @@
   @media print {
     body { background: #fff; color: #000; font-size: 13px; }
     .wrap { padding: 0; max-width: none; }
-    details.howto, .tip, .ds-sec, .chart-art-box, .submit-sec, #teacherView, .who-load, .load-msg, .paste-tools, .paste-empty { display: none !important; }
+    details.howto, .tip, .ds-sec, .chart-art-box, .submit-sec, #teacherView, .fab, .who-load, .load-msg, .paste-tools, .paste-empty { display: none !important; }
     .head { display: block; background: #fff !important; color: #000; border: 1px solid #999; padding: 12px 16px; }
     .head p, .who label { color: #333 !important; }
     .head .who input { color: #000 !important; }
@@ -592,6 +604,11 @@
       <span class="s-msg" id="submitMsg"></span>
     </div>
   </section>
+</div>
+
+<div class="fab" role="region" aria-label="제출">
+  <button type="button" class="fab-btn" id="fabBtn">제출하기</button>
+  <span class="fab-msg" id="fabMsg" aria-live="polite"></span>
 </div>
 
 <div id="teacherView">
@@ -1013,19 +1030,28 @@ function clientId() {
 // 제출
 const sentKey = KEY + "-sent";
 function sMsg(t, cls = "") { const el = $("#submitMsg"); el.textContent = t; el.className = "s-msg " + cls; }
+// 오른쪽 위 버튼 옆에 잠깐 보이는 안내
+let fabTimer = null;
+function flash(t, cls = "") {
+  sMsg(t, cls);
+  const el = $("#fabMsg"); el.textContent = t; el.className = "fab-msg " + cls;
+  clearTimeout(fabTimer); fabTimer = setTimeout(() => { el.textContent = ""; }, cls === "warn" ? 6000 : 3500);
+}
 function showSent() {
   let sent = null;
   try { sent = JSON.parse(sessionStorage.getItem(sentKey) || "null"); } catch (e) {}
-  if (!sent) return sMsg("");
+  const fab = $("#fabBtn");
+  if (!sent) { sMsg(""); fab.textContent = "제출하기"; fab.className = "fab-btn"; return; }
   const t = new Date(sent.at).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
-  if (sent.snap === JSON.stringify(state)) sMsg(`✓ ${t}에 제출했어요.`, "ok");
-  else sMsg(`${t}에 제출한 뒤 고친 내용이 있어요. 다시 제출해 주세요.`, "warn");
+  if (sent.snap === JSON.stringify(state)) { sMsg(`✓ ${t}에 제출했어요.`, "ok"); fab.textContent = "✓ 제출됨"; fab.className = "fab-btn ok"; }
+  else { sMsg(`${t}에 제출한 뒤 고친 내용이 있어요. 다시 제출해 주세요.`, "warn"); fab.textContent = "다시 제출하기"; fab.className = "fab-btn warn"; }
 }
-$("#submitBtn").addEventListener("click", async () => {
-  if (!SHEET_URL) return sMsg("아직 선생님이 제출 기능을 연결하지 않았어요. 선생님께 알려 주세요.", "warn");
+async function submitAll() {
+  if (!SHEET_URL) return flash("아직 선생님이 제출 기능을 연결하지 않았어요. 선생님께 알려 주세요.", "warn");
   const sid = (state.id || "").trim(), sname = (state.name || "").trim();
-  if (!sid || !sname) { sMsg("맨 위에 학번과 이름을 먼저 적어 주세요.", "warn"); window.scrollTo({ top: 0, behavior: "smooth" }); return; }
-  const btn = $("#submitBtn"); btn.disabled = true; sMsg("제출하는 중…");
+  if (!sid || !sname) { flash("맨 위에 학번과 이름을 먼저 적어 주세요.", "warn"); window.scrollTo({ top: 0, behavior: "smooth" }); return; }
+  const btns = [$("#submitBtn"), $("#fabBtn")];
+  btns.forEach(b => b.disabled = true); flash("제출하는 중…");
   const snap = JSON.stringify(state);
   try {
     const data = Object.assign({}, state, { sid, sname });
@@ -1038,11 +1064,14 @@ $("#submitBtn").addEventListener("click", async () => {
     const j = await post({ action: "submit", clientId: clientId(), data, imgs, qids: FIELDS.map(f => f[1]), cells: FIELDS.map(f => state[f[0]] ?? "") });
     if (!j.ok) throw j;
     try { sessionStorage.setItem(sentKey, JSON.stringify({ at: Date.now(), snap })); } catch (e) {}
+    flash("✓ 선생님께 제출했어요.", "ok");
     showSent();
   } catch (e) {
-    sMsg("제출하지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.", "warn");
-  } finally { btn.disabled = false; }
-});
+    flash("제출하지 못했어요. 인터넷 연결을 확인하고 다시 눌러 주세요.", "warn");
+  } finally { btns.forEach(b => b.disabled = false); }
+}
+$("#submitBtn").addEventListener("click", submitAll);
+$("#fabBtn").addEventListener("click", submitAll);
 document.addEventListener("input", () => setTimeout(showSent, 350));
 
 // 오렌지3 캡처 붙여넣기 (클릭 → Ctrl+V, 또는 이미지 파일 끌어다 놓기)
