@@ -187,6 +187,13 @@
   .df tbody tr:nth-child(even) { background: var(--field); }
   .df tbody tr:hover { background: var(--accent-weak); }
 
+  /* 과제 구분 띠 */
+  .task-band { display: flex; align-items: center; gap: 16px; margin: 40px 0 0; padding: 16px 22px; border-radius: 16px; background: var(--hero); color: var(--hero-ink); scroll-margin-top: 70px; }
+  .task-no { flex: none; font-family: "Noto Sans KR", var(--body); font-weight: 600; font-size: 15px; background: #4fe0a0; color: #13283a; border-radius: 999px; padding: 5px 14px; }
+  .task-txt h2 { margin: 0; font-family: "Noto Sans KR", var(--body); font-weight: 600; font-size: 22px; letter-spacing: -.02em; line-height: 1.35; }
+  .task-kind { font-weight: 500; color: #9fd0ff; }
+  .task-txt p { margin: 0; font-size: 13.5px; color: var(--hero-muted); font-family: var(--mono); }
+
   /* 제출 */
   .q-num.sub-n { background: var(--sales-weak); color: var(--sales); font-size: 17px; }
   .submit-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 6px; }
@@ -273,9 +280,13 @@
     .who { grid-template-columns: 1fr 1fr; width: 100%; }
     .q { padding: 20px 16px; }
     .q-h h2 { font-size: 21px; }
+    .task-band { flex-direction: column; align-items: flex-start; gap: 8px; padding: 14px 16px; }
+    .task-txt h2 { font-size: 19px; }
   }
 
   @media print {
+    .task-band { background: #fff !important; color: #000; border: 1px solid #999; margin-top: 14px; break-after: avoid; }
+    .task-kind, .task-txt p { color: #333 !important; }
     body { background: #fff; color: #000; font-size: 13px; }
     .wrap { padding: 0; max-width: none; }
     details.howto, .tip, .ds-sec, .chart-art-box, .submit-sec, #teacherView, .fab, .who-load, .load-msg, .paste-tools, .paste-empty { display: none !important; }
@@ -361,6 +372,11 @@
     </div>
     <div class="df-wrap"><table class="df" id="df"></table></div>
   </section>
+
+  <div class="task-band" id="task1">
+    <span class="task-no">과제 1</span>
+    <div class="task-txt"><h2>단순 선형 회귀 분석 <span class="task-kind">(통계적)</span></h2><p>STEP 1 ~ STEP 3</p></div>
+  </div>
 
   <!-- 1 -->
   <section class="q">
@@ -492,6 +508,11 @@
     </div>
   </section>
 
+  <div class="task-band" id="task2">
+    <span class="task-no">과제 2</span>
+    <div class="task-txt"><h2>단순 선형 회귀 분석 <span class="task-kind">(기계학습 기반)</span></h2><p>STEP 4</p></div>
+  </div>
+
   <!-- 4 -->
   <section class="q">
     <div class="q-h"><span class="q-num"><span><small>STEP</small>4</span></span><h2>기계학습 기반 회귀 분석으로 매출 예측하기</h2></div>
@@ -550,6 +571,11 @@
       <div class="paste-tools"><button type="button" class="btn-sub danger" data-imgdel="img4" hidden>캡처 지우기</button><span class="s-msg" data-imgmsg="img4"></span></div>
     </div>
   </section>
+
+  <div class="task-band" id="task3">
+    <span class="task-no">과제 3</span>
+    <div class="task-txt"><h2>다중 선형 회귀 분석 <span class="task-kind">(통계적)</span></h2><p>STEP 5</p></div>
+  </div>
 
   <!-- 5 -->
   <section class="q">
@@ -1010,7 +1036,7 @@ const FIELDS = [
   ["r2cmp", "5-(2) R² 비교", 5], ["mrWhy", "5-(2) 이유", 5, true], ["adPlan", "5-(3) 광고비 제안", 5, true]
 ];
 const IMG_KEYS = [["img3", "STEP 3 캡처", 3], ["img4", "STEP 4 캡처", 4], ["img5", "STEP 5 캡처", 5]];
-const STEP_NAMES = { 1: "STEP 1 · 데이터 준비 및 특성 파악", 2: "STEP 2 · 상관관계", 3: "STEP 3 · 통계적 회귀 분석", 4: "STEP 4 · 기계학습 기반 회귀 분석", 5: "STEP 5 · 다중 선형 회귀 분석" };
+const STEP_NAMES = { 1: "과제 1 · STEP 1 · 데이터 준비 및 특성 파악", 2: "과제 1 · STEP 2 · 상관관계", 3: "과제 1 · STEP 3 · 통계적 회귀 분석", 4: "과제 2 · STEP 4 · 기계학습 기반 회귀 분석", 5: "과제 3 · STEP 5 · 다중 선형 회귀 분석" };
 const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const post = body => fetch(SHEET_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(body) }).then(r => r.json());
 
